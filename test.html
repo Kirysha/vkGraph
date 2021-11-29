@@ -1,0 +1,80 @@
+<html>
+  <head>
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.js"
+    ></script>
+
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis-network.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+    <style type="text/css">
+      #mynetwork {
+        border: 1px solid lightgray;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mynetwork"></div>
+
+    <script type="text/javascript">
+      // create an array with nodes
+      async function start(params) {
+        const users = await fetch("http://127.0.0.1:3000/users", {
+          method: "GET",
+          redirect: "follow",
+        })
+          .then((response) => response.json())
+          .then((result) => result)
+          .catch((error) => console.log("error", error));
+
+        const links = await fetch("http://127.0.0.1:3000/links", {
+          method: "GET",
+          redirect: "follow",
+        })
+          .then((response) => response.json())
+          .then((result) => result)
+          .catch((error) => console.log("error", error));
+        console.log(users, links);
+
+        var nodes = new vis.DataSet(users);
+
+        // create an array with edges
+        var edges = new vis.DataSet(links);
+
+        // create a network
+        var container = document.getElementById("mynetwork");
+        var data = {
+          nodes: nodes,
+          edges: edges,
+        };
+        var options = {
+          edges: {
+            smooth: {
+              forceDirection: "none",
+            },
+          },
+          physics: {
+            barnesHut: {
+              gravitationalConstant: -30000,
+              centralGravity: 0,
+              springLength: 500,
+              springConstant: 0,
+              damping: 1,
+              avoidOverlap: 1,
+            },
+            maxVelocity: 150,
+            minVelocity: 1,
+            timestep: 0.01,
+          },
+        };
+        var network = new vis.Network(container, data, options);
+      }
+
+      start();
+    </script>
+  </body>
+</html>
