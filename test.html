@@ -10,6 +10,13 @@
       rel="stylesheet"
       type="text/css"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
+    <script src="jsnetworkx.js"></script>
 
     <style type="text/css">
       #mynetwork {
@@ -19,11 +26,15 @@
   </head>
   <body>
     <div id="mynetwork"></div>
-
+    <div id="visualization"></div>
+    <div
+      class="ct-chart ct-perfect-fourth"
+      style="width: 400px; height: 400px"
+    ></div>
     <script type="text/javascript">
       // create an array with nodes
       async function start(params) {
-        const users = await fetch("http://127.0.0.1:3000/users", {
+        const usersFromApi = await fetch("http://127.0.0.1:3000/users/after", {
           method: "GET",
           redirect: "follow",
         })
@@ -31,47 +42,192 @@
           .then((result) => result)
           .catch((error) => console.log("error", error));
 
-        const links = await fetch("http://127.0.0.1:3000/links", {
+        const links = await fetch("http://127.0.0.1:3000/links/after", {
           method: "GET",
           redirect: "follow",
         })
           .then((response) => response.json())
           .then((result) => result)
           .catch((error) => console.log("error", error));
-        console.log(users, links);
+        // const users = usersFromApi.filter(
+        //   (o) => links.findIndex((obj) => obj.from === o.id) != -1
+        // );
+        console.log(usersFromApi, links);
+        console.log("Логорифм от кол-ва вершин", Math.log(usersFromApi.length));
 
-        var nodes = new vis.DataSet(users);
+        var G = new jsnx.Graph();
+        G.addNodesFrom(usersFromApi.map((res) => res.id));
+        links.forEach((res) => {
+          G.addEdge(res.from, res.to);
+        });
+        const N = G.nodes().length;
+        console.log(G.nodes());
+        console.log(G.edges());
+        console.log("averageClustering", jsnx.averageClustering(G));
+        const C = jsnx.averageClustering(G);
+        var path = await jsnx.allPairsDijkstraPath(G);
+        let sumPath = 0;
 
-        // create an array with edges
-        var edges = new vis.DataSet(links);
+        //Расчет длинны всех путей
+        // for (let index = 0; index < G.nodes().length; index++) {
+        //   const element = G.nodes()[index];
+        //   for (let index2 = 0; index2 < G.nodes().length; index2++) {
+        //     const element2 = G.nodes()[index2];
+        //     if (index !== index2) {
+        //       sumPath += jsnx.dijkstraPathLength(G, {
+        //         source: element,
+        //         target: element2,
+        //       });
+        //       //path.get(element).get(element2);
+        //     }
+        //   }
+        // }
+        // console.log(
+        //   "Длины всех путей",
 
-        // create a network
-        var container = document.getElementById("mynetwork");
-        var data = {
-          nodes: nodes,
-          edges: edges,
-        };
-        var options = {
-          edges: {
-            smooth: {
-              forceDirection: "none",
-            },
+        // );
+        const L = (1 / (N * (N - 1))) * sumPath;
+        const Ls = 3.58;
+        const Cs = 0.49;
+        console.log("Расчетное L", sumPath, (1 / (N * (N - 1))) * sumPath);
+        console.log(
+          "Мера принадлежности графа к классу «Мир тесен»",
+          Ls / L - C / Cs
+        );
+        // const user1 = users[Math.floor(Math.random() * (users.length - 0)) + 0];
+        // const user2 = users[Math.floor(Math.random() * (users.length - 0)) + 0];
+        // console.log(user1, user2);
+        // let i = 0;
+        // let to = links.find((o) => o.from === user1.id).to;
+        // while (to !== user2.id) {
+        //   i++;
+        //   const arr = links.filter((o) => o.from === to);
+        //   console.log(arr, to, i);
+        //   const newTo = arr[Math.floor(Math.random() * (arr.length - 0)) + 0];
+        //   to = newTo.to;
+        // }
+        // console.log(user1, user2, to, i);
+
+        // // create an array with edges
+        // var nodes = new vis.DataSet(usersFromApi);
+        // var edges = new vis.DataSet(links);
+
+        // // create a network
+        // var container = document.getElementById("mynetwork");
+        // var data = {
+        //   nodes: nodes,
+        //   edges: edges,
+        // };
+        // var options = {
+        //   edges: {
+        //     smooth: {
+        //       forceDirection: "none",
+        //     },
+        //   },
+        //   physics: {
+        //     barnesHut: {
+        //       gravitationalConstant: -30000,
+        //       centralGravity: 0,
+        //       springLength: 500,
+        //       springConstant: 0,
+        //       damping: 1,
+        //       avoidOverlap: 1,
+        //     },
+        //     maxVelocity: 150,
+        //     minVelocity: 1,
+        //     timestep: 0.01,
+        //   },
+        // };
+        // var network = new vis.Network(container, data, options);
+
+        // ---------------------Построение графика распределения----------------------------
+        const degreeHistogram = jsnx.degreeHistogram(G).sort((a, b) => b - a);
+        let de = [];
+        const degree = jsnx.degree(G).forEach((value, key, map) => {
+          de.push({ value, key });
+        });
+        var items = de
+          .sort((a, b) => b.value - a.value)
+          .map((val, index) => ({ x: index, y: val.value }));
+        new Chartist.Line(
+          ".ct-chart",
+          {
+            series: [items],
           },
-          physics: {
-            barnesHut: {
-              gravitationalConstant: -30000,
-              centralGravity: 0,
-              springLength: 500,
-              springConstant: 0,
-              damping: 1,
-              avoidOverlap: 1,
+          {
+            axisX: {
+              type: Chartist.AutoScaleAxis,
+              onlyInteger: true,
             },
-            maxVelocity: 150,
-            minVelocity: 1,
-            timestep: 0.01,
-          },
-        };
-        var network = new vis.Network(container, data, options);
+            axisY: {
+              type: Chartist.FixedScaleAxis,
+              ticks: [0, 50, 100, 150, 200, 250, 300, 350, 400],
+              low: -1,
+            },
+            showPoint: false,
+          }
+        );
+
+        console.log("Кол во связей нод", degreeHistogram);
+        console.log(
+          "Кол во связей у каждой ноды",
+          de.sort((a, b) => b.value - a.value)
+        );
+        console.log(
+          degreeHistogram.map((val, key) => {
+            if (val > 0) {
+              return `${val} вершин с ${key} связей, /n`;
+            } else {
+              return "";
+            }
+          })
+        );
+
+        // const RandomGraph = jsnx.fastGnpRandomGraph(1000, 0.1);
+        // const degreeHistogram = jsnx.degreeHistogram(RandomGraph);
+        // console.log("RandomGraph-----", jsnx.draw(RandomGraph));
+        // let de = [];
+        // const degree = jsnx.degree(RandomGraph).forEach((value, key, map) => {
+        //   de.push({ value, key });
+        // });
+        // var items = degreeHistogram.map((val, index) => ({
+        //   x: index,
+        //   y: val,
+        // }));
+        // new Chartist.Line(
+        //   ".ct-chart",
+        //   {
+        //     series: [items],
+        //   },
+        //   {
+        //     axisX: {
+        //       type: Chartist.AutoScaleAxis,
+        //       onlyInteger: true,
+        //     },
+        //     axisY: {
+        //       type: Chartist.FixedScaleAxis,
+        //       ticks: [0, 10, 20, 30, 40, 50],
+        //       low: -1,
+        //     },
+        //     showPoint: false,
+        //   }
+        // );
+        // console.log("Кол во связей нод", degreeHistogram);
+        // console.log(
+        //   "Кол во связей у каждой ноды",
+        //   de.sort((a, b) => b.value - a.value)
+        // );
+        // console.log(
+        //   degreeHistogram.map((val, key) => {
+        //     if (val > 0) {
+        //       return `${val} вершин с ${key} связей, /n`;
+        //     } else {
+        //       return "";
+        //     }
+        //   })
+        // );
+        console.log("BA", Math.log(N) / Math.log(Math.log(N)));
+        console.log("BA C", Math.pow(N, -0.75));
       }
 
       start();

@@ -3,7 +3,7 @@ var axios = require("axios");
 var fs = require("fs");
 var lodash = require("lodash");
 var moment = require("moment");
-const { get, map, uniqBy, filter } = require("lodash");
+const { get, map, uniqBy, filter, size } = require("lodash");
 
 const hostname = "127.0.0.1";
 const port = 3000;
@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
       console.log("user");
       res.writeHead(200);
       fs.readFile(
-        "uniqUsers.json",
+        "j/uniqUsers.json",
         "utf8",
         function readFileCallback(err, data) {
           if (err) {
@@ -42,14 +42,107 @@ const server = http.createServer((req, res) => {
     case "/links":
       res.writeHead(200);
       fs.readFile(
-        "linksOfWidth.json",
+        "j/linksOfWidth.json",
         "utf8",
         function readFileCallbackTwo(err, data) {
           if (err) {
             console.log(err);
           } else {
             const obj = JSON.parse(data); //now it an object
-            res.end(JSON.stringify(filter(obj, (res) => res.width > 2)));
+            const fData = filter(obj, (res) => res.width > 2);
+            res.end(JSON.stringify(fData));
+          }
+        }
+      );
+      break;
+    case "/users/after":
+      console.log("user");
+      res.writeHead(200);
+      fs.readFile(
+        "j/uniqUsersAfter.json",
+        "utf8",
+        function readFileCallback(err, data) {
+          if (err) {
+            console.log(err);
+          } else {
+            const obj = JSON.parse(data); //now it an object
+            const dataVal = map(obj, (res) => ({
+              id: res.id,
+              label: res.first_name + " " + res.last_name,
+            }));
+            res.end(JSON.stringify(dataVal));
+          }
+        }
+      );
+      break;
+    case "/users/befor":
+      console.log("user");
+      res.writeHead(200);
+      fs.readFile(
+        "j/uniqUsersBefor.json",
+        "utf8",
+        function readFileCallback(err, data) {
+          if (err) {
+            console.log(err);
+          } else {
+            const obj = JSON.parse(data); //now it an object
+            const dataVal = map(obj, (res) => ({
+              id: res.id,
+              label: res.first_name + " " + res.last_name,
+            }));
+            res.end(JSON.stringify(dataVal));
+          }
+        }
+      );
+      break;
+    case "/links/befor":
+      res.writeHead(200);
+      fs.readFile(
+        "j/linksOfWidthBefor.json",
+        "utf8",
+        function readFileCallbackTwo(err, data) {
+          if (err) {
+            console.log(err);
+          } else {
+            const obj = JSON.parse(data); //now it an object
+            const fData = filter(obj, (res) => res.width > 2);
+            res.end(JSON.stringify(fData));
+          }
+        }
+      );
+      break;
+    case "/users/after":
+      console.log("user");
+      res.writeHead(200);
+      fs.readFile(
+        "j/uniqUsersAfter.json",
+        "utf8",
+        function readFileCallback(err, data) {
+          if (err) {
+            console.log(err);
+          } else {
+            const obj = JSON.parse(data); //now it an object
+            const dataVal = map(obj, (res) => ({
+              id: res.id,
+              label: res.first_name + " " + res.last_name,
+            }));
+            res.end(JSON.stringify(dataVal));
+          }
+        }
+      );
+      break;
+    case "/links/after":
+      res.writeHead(200);
+      fs.readFile(
+        "j/linksOfWidthAfter.json",
+        "utf8",
+        function readFileCallbackTwo(err, data) {
+          if (err) {
+            console.log(err);
+          } else {
+            const obj = JSON.parse(data); //now it an object
+            const fData = filter(obj, (res) => res.width > 2);
+            res.end(JSON.stringify(fData));
           }
         }
       );
